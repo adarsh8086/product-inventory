@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Inventory</title>
+</head>
+<body>
+    <h1>Product Inventory</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="product-list">
+           
+            {% for product in products %}
+                <tr id="product-{{ product.id }}">
+                    <td>{{ product.name }}</td>
+                    <td>{{ product.price }}</td>
+                    <td>{{ product.stock }}</td>
+                    <td>
+                        <button onclick="updateProduct('{{ product.id }}')">Update</button>
+                        <button onclick="deleteProduct('{{ product.id }}')">Delete</button>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button onclick="addProduct()">Add Product</button>
+
+    <script>
+        
+        function fetchProducts() {
+            fetch('/api/products/')
+                .then(response => response.json())
+                .then(data => {
+                    const productList = document.getElementById('product-list');
+                    productList.innerHTML = ''; // Clear the current product list
+
+                    data.forEach(product => {
+                        const productRow = document.createElement('tr');
+                        productRow.id = `product-${product.id}`;
+                        productRow.innerHTML = `
+                            <td>${product.name}</td>
+                            <td>${product.price}</td>
+                            <td>${product.stock}</td>
+                            <td>
+                                <button onclick="updateProduct(${product.id})">Update</button>
+                                <button onclick="deleteProduct(${product.id})">Delete</button>
+                            </td>
+                        `;
+                        productList.appendChild(productRow);
+                    });
+                })
+                .catch(error => alert('Error fetching products.'));
+        }
+
+        
+        function addProduct() {
+            const name = prompt('Enter product name:');
+            const price = prompt('Enter product price:');
+            const stock = prompt('Enter product stock:');
+
+            fetch('/api/products/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: name,
+                    price: price,
+                    stock: stock,
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Product added!');
+                fetchProducts(); // Refresh the product list dynamically after adding
+            })
+            .catch(error => alert('Error adding product.'));
+        }
+
+        // Update an existing product
+        function updateProduct(id) {
+            const name = prompt('Enter new product name:');
+            const price = prompt('Enter new product price:');
+            const stock = prompt('Enter new product stock:');
+
+            fetch(`/api/products/${id}/`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: name,
+                    price: price,
+                    stock: stock,
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Product updated!');
+                fetchProducts(); // Refresh the product list dynamically after updating
+            })
+            .catch(error => alert('Error updating product.'));
+        }
+
+        function deleteProduct(id) {
+            if (confirm('Are you sure you want to delete this product?')) {
+                fetch(`/api/products/${id}/`, {
+                    method: 'DELETE',
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Product deleted!');
+                        document.getElementById(`product-${id}`).remove(); // Remove the deleted product from the list
+                    } else {
+                        alert('Error deleting product.');
+                    }
+                })
+                .catch(error => alert('Error deleting product.'));
+            }
+        }
+
+        // Initial fetch of products when the page loads
+        fetchProducts();
+    </script>
+</body>
+</html>
